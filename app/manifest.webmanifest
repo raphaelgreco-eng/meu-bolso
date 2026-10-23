@@ -1,0 +1,20 @@
+{
+  "name": "Meu Bolso",
+  "short_name": "Meu Bolso",
+  "description": "Registro de gastos pessoais.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F8FB",
+  "theme_color": "#0B2A5B",
+  "icons": [
+    {
+      "src": "icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

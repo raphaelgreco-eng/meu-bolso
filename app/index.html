@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Meu Bolso</title>
+  <meta name="description" content="Registro de gastos pessoais.">
+  <meta name="theme-color" content="#0B2A5B">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icone.svg">
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+  <!-- Tela de entrada -->
+  <main id="tela-entrada" class="tela entrada">
+    <img src="icone.svg" alt="" class="entrada-icone" width="72" height="72">
+    <h1>Meu Bolso</h1>
+    <p class="sub">Seus gastos, rápido e leve.</p>
+
+    <form id="form-entrada" class="cartao" novalidate>
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="email" inputmode="email" required>
+
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
+
+      <p id="erro-entrada" class="erro" role="alert" hidden></p>
+
+      <button type="submit" id="btn-entrar" class="btn primario">Entrar</button>
+      <button type="button" id="btn-criar" class="btn secundario">Criar conta</button>
+    </form>
+  </main>
+
+  <!-- Tela principal -->
+  <main id="tela-principal" class="tela" hidden>
+    <header class="topo">
+      <h1>Meu Bolso</h1>
+      <button type="button" id="btn-sair" class="btn-texto">Sair</button>
+    </header>
+
+    <!-- Os primeiros cinco segundos -->
+    <section class="cartao destaque" aria-labelledby="rotulo-total">
+      <p id="rotulo-total" class="rotulo">Gasto em <span id="mes-nome"></span></p>
+      <p id="total-mes" class="total">R$ 0,00</p>
+      <h2 class="mini">Últimos gastos</h2>
+      <ul id="ultimos" class="ultimos"></ul>
+      <p id="ultimos-vazio" class="vazio-claro">Nenhum gasto lançado este mês.</p>
+    </section>
+
+    <!-- Lançar à mão -->
+    <section class="cartao" aria-labelledby="titulo-lancar">
+      <h2 id="titulo-lancar">Lançar à mão</h2>
+      <form id="form-gasto" novalidate>
+        <label for="valor">Valor</label>
+        <input id="valor" class="campo-valor" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+
+        <p class="legenda">Categoria</p>
+        <div id="categorias" class="categorias" role="group" aria-label="Categoria"></div>
+
+        <div class="linha-campos">
+          <div>
+            <label for="descricao">Onde ou com o quê <span class="opcional">(opcional)</span></label>
+            <input id="descricao" type="text" maxlength="80" placeholder="Ex.: padaria" autocomplete="off">
+          </div>
+          <div>
+            <label for="data">Data</label>
+            <input id="data" type="date">
+          </div>
+        </div>
+
+        <p id="erro-gasto" class="erro" role="alert" hidden></p>
+        <button type="submit" id="btn-salvar" class="btn primario">Salvar gasto</button>
+      </form>
+    </section>
+
+    <!-- Resumo da semana (só aparece quando houver resumo) -->
+    <section id="cartao-resumo" class="cartao" aria-labelledby="titulo-resumo" hidden>
+      <h2 id="titulo-resumo">Resumo da semana</h2>
+      <p id="resumo-texto" class="resumo-texto"></p>
+    </section>
+
+    <!-- Assistente (chega na sexta) -->
+    <section class="cartao" aria-labelledby="titulo-assistente">
+      <h2 id="titulo-assistente">Assistente</h2>
+      <form id="form-assistente" novalidate>
+        <label for="frase" class="oculto">Escreva o gasto numa frase</label>
+        <input id="frase" type="text" placeholder="Ex.: 32 reais de gasolina" autocomplete="off">
+        <div class="linha-botoes">
+          <button type="submit" class="btn secundario">Enviar</button>
+          <button type="button" id="btn-foto" class="btn secundario">Foto do cupom</button>
+        </div>
+        <p id="assistente-aviso" class="info" role="status" hidden></p>
+      </form>
+    </section>
+
+    <!-- Barras por categoria -->
+    <section class="cartao" aria-labelledby="titulo-barras">
+      <h2 id="titulo-barras">Por categoria</h2>
+      <ul id="barras" class="barras"></ul>
+      <p id="barras-vazio" class="vazio">As barras aparecem quando houver gastos no mês.</p>
+    </section>
+
+    <!-- Lista do mês -->
+    <section class="cartao" aria-labelledby="titulo-lista">
+      <h2 id="titulo-lista">Gastos do mês</h2>
+      <ul id="lista" class="lista"></ul>
+      <p id="lista-vazia" class="vazio">Nenhum gasto neste mês ainda.</p>
+    </section>
+  </main>
+
+  <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="configuracao.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
