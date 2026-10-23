@@ -118,8 +118,8 @@
     $("btn-criar").addEventListener("click", () => entrar(true));
     $("btn-sair").addEventListener("click", sair);
     $("form-gasto").addEventListener("submit", (e) => { e.preventDefault(); salvarGasto(); });
-    $("form-assistente").addEventListener("submit", (e) => { e.preventDefault(); assistenteEmBreve(); });
-    $("btn-foto").addEventListener("click", assistenteEmBreve);
+    $("form-assistente").addEventListener("submit", (e) => { e.preventDefault(); enviarFrase(); });
+    $("btn-foto").addEventListener("click", escolherFoto);
 
     desenharCategorias();
     $("data").value = hojeISO();
@@ -356,12 +356,118 @@
     }
   }
 
-  // ---------- Assistente (chega na sexta) ----------
+  // ---------- Assistente ----------
+  // A frase ou a foto vai para /api/assistente, com o token da sessão.
+  // A foto é reduzida aqui no aparelho e não é guardada em lugar nenhum.
 
-  function assistenteEmBreve() {
+  const LADO_MAXIMO_FOTO = 1600;
+
+  function respostaAssistente(texto) {
     const el = $("assistente-aviso");
-    el.textContent = "O assistente chega na sexta.";
-    el.hidden = false;
+    el.textContent = texto;
+    el.hidden = !texto;
+  }
+
+  function assistenteOcupado(sim) {
+    document.querySelectorAll("#form-assistente button").forEach((b) => { b.disabled = sim; });
+    $("frase").disabled = sim;
+  }
+
+  async function enviarFrase() {
+    const mensagem = $("frase").value.trim();
+    if (!mensagem) return respostaAssistente("Escreva o gasto ou a pergunta, por exemplo: mercado 50 hoje.");
+    const ok = await falarComAssistente({ mensagem });
+    if (ok) $("frase").value = "";
+  }
+
+  function escolherFoto() {
+    const entrada = document.createElement("input");
+    entrada.type = "file";
+    entrada.accept = "image/*";
+    entrada.setAttribute("capture", "environment");
+    entrada.addEventListener("change", async () => {
+      const arquivo = entrada.files && entrada.files[0];
+      entrada.value = "";
+      if (!arquivo) return;
+      assistenteOcupado(true);
+      respostaAssistente("Lendo o cupom…");
+      let imagem;
+      try {
+        imagem = await reduzirFoto(arquivo);
+      } catch (erro) {
+        console.error("Meu Bolso — erro ao reduzir a foto:", erro);
+        assistenteOcupado(false);
+        return respostaAssistente("Não consegui abrir esta foto. Tire outra foto do cupom, com boa luz, e tente de novo.");
+      }
+      await falarComAssistente({ mensagem: $("frase").value.trim(), imagem, mime: "image/jpeg" });
+    });
+    entrada.click();
+  }
+
+  // Reduz para no máximo 1600 px no lado maior e converte para JPEG. Devolve só o base64.
+  function reduzirFoto(arquivo) {
+    return new Promise((resolve, reject) => {
+      const endereco = URL.createObjectURL(arquivo);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(endereco);
+        const escala = Math.min(1, LADO_MAXIMO_FOTO / Math.max(img.naturalWidth, img.naturalHeight));
+        const largura = Math.max(1, Math.round(img.naturalWidth * escala));
+        const altura = Math.max(1, Math.round(img.naturalHeight * escala));
+        const tela = document.createElement("canvas");
+        tela.width = largura;
+        tela.height = altura;
+        const pincel = tela.getContext("2d");
+        pincel.fillStyle = "#fff";
+        pincel.fillRect(0, 0, largura, altura);
+        pincel.drawImage(img, 0, 0, largura, altura);
+        const dados = tela.toDataURL("image/jpeg", 0.85);
+        tela.width = tela.height = 0;
+        resolve(dados.slice(dados.indexOf(",") + 1));
+      };
+      img.onerror = () => { URL.revokeObjectURL(endereco); reject(new Error("imagem ilegível")); };
+      img.src = endereco;
+    });
+  }
+
+  async function falarComAssistente(pedido) {
+    assistenteOcupado(true);
+    if (!pedido.imagem) respostaAssistente("Pensando…");
+    try {
+      const { data } = await cliente.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      if (!token) {
+        respostaAssistente("Sua entrada expirou. Toque em Sair e entre de novo.");
+        return false;
+      }
+
+      const resposta = await fetch("/api/assistente", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ ...pedido, categorias: CATEGORIAS })
+      });
+
+      let corpo = {};
+      try { corpo = await resposta.json(); } catch (erro) { /* resposta sem JSON */ }
+
+      if (!resposta.ok) {
+        if (resposta.status === 404) {
+          respostaAssistente("O assistente não está publicado neste endereço. Abra o app pelo site da Netlify.");
+        } else {
+          respostaAssistente(corpo.erro || "O assistente não conseguiu responder agora. Tente de novo em instantes.");
+        }
+        return false;
+      }
+
+      respostaAssistente(corpo.resposta || "");
+      if (corpo.lancou) carregarMes();
+      return true;
+    } catch (erro) {
+      respostaAssistente(frase(erro));
+      return false;
+    } finally {
+      assistenteOcupado(false);
+    }
   }
 
   iniciar();
