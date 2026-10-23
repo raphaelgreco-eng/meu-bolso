@@ -82,6 +82,7 @@ h2 { font-size: 19px; margin-bottom: 14px; }
   letter-spacing: -0.5px;
   color: #fff;
 }
+.destaque .media { margin: -12px 0 18px; color: #C9D4EA; font-size: 16px; }
 .destaque .mini { color: var(--laranja); font-size: 15px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.6px; }
 
 .ultimos { list-style: none; margin: 0; padding: 0; }
