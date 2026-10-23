@@ -316,7 +316,7 @@
       const { error } = await cliente.from("gastos").insert({
         dono: usuario.id,
         data: data,
-        descricao: descricao || null,
+        descricao: descricao || categoriaEscolhida,
         valor: valor,
         categoria: categoriaEscolhida,
         origem: "manual"
