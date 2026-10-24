@@ -190,6 +190,26 @@ input:focus { outline: none; border-color: var(--laranja); box-shadow: 0 0 0 3px
   cursor: pointer;
 }
 
+/* Campo do assistente com o microfone ao lado */
+.linha-frase { display: flex; gap: 8px; align-items: flex-start; }
+.linha-frase input { flex: 1; min-width: 0; }
+.btn-microfone {
+  flex: none;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 20px;
+  color: var(--azul);
+  background: #fff;
+  border: 1.5px solid var(--azul);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.btn-microfone[aria-pressed="true"] { font-size: 15px; font-weight: 700; color: #fff; background: var(--laranja-botao); border-color: var(--laranja-botao); }
+.btn-microfone:disabled { background: #D5D9E2; color: #4A5266; border-color: #D5D9E2; cursor: wait; }
+.dica { margin: -8px 0 14px; font-size: 15px; color: var(--texto-suave); }
+
 .linha-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .linha-botoes .btn + .btn { margin-top: 0; }
 

@@ -87,7 +87,11 @@
       <h2 id="titulo-assistente">Assistente</h2>
       <form id="form-assistente" novalidate>
         <label for="frase" class="oculto">Escreva o gasto numa frase</label>
-        <input id="frase" type="text" placeholder="Ex.: 32 reais de gasolina" autocomplete="off">
+        <div class="linha-frase">
+          <input id="frase" type="text" placeholder="Ex.: 32 reais de gasolina" autocomplete="off">
+          <button type="button" id="btn-microfone" class="btn-microfone" aria-label="Falar o gasto" hidden>🎤</button>
+        </div>
+        <p id="dica-microfone" class="dica" hidden>Use o microfone do teclado do celular.</p>
         <div class="linha-botoes">
           <button type="submit" class="btn secundario">Enviar</button>
           <button type="button" id="btn-foto" class="btn secundario">Foto do cupom</button>

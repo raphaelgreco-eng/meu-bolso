@@ -133,6 +133,7 @@
     $("form-gasto").addEventListener("submit", (e) => { e.preventDefault(); salvarGasto(); });
     $("form-assistente").addEventListener("submit", (e) => { e.preventDefault(); enviarFrase(); });
     $("btn-foto").addEventListener("click", escolherFoto);
+    prepararMicrofone();
     $("aviso").addEventListener("click", () => { $("aviso").hidden = true; });
 
     desenharCategorias();
@@ -420,6 +421,76 @@
     if (!mensagem) return respostaAssistente("Escreva o gasto ou a pergunta, por exemplo: mercado 50 hoje.");
     const ok = await falarComAssistente({ mensagem });
     if (ok) $("frase").value = "";
+  }
+
+  // ---------- Microfone ----------
+  // O navegador escuta em português, escreve o que ouviu no campo e envia ao assistente.
+  // A voz não é guardada: só o texto segue para o assistente.
+
+  function prepararMicrofone() {
+    const Reconhecimento = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const botao = $("btn-microfone");
+    if (!Reconhecimento) {
+      botao.hidden = true;
+      $("dica-microfone").hidden = false;
+      return;
+    }
+    botao.hidden = false;
+
+    let escutando = false;
+    let ouviu = false;
+    const ouvido = new Reconhecimento();
+    ouvido.lang = "pt-BR";
+    ouvido.interimResults = false;
+    ouvido.maxAlternatives = 1;
+
+    function estadoBotao(sim) {
+      escutando = sim;
+      botao.textContent = sim ? "Ouvindo…" : "🎤";
+      botao.setAttribute("aria-pressed", String(sim));
+    }
+
+    ouvido.onresult = (evento) => {
+      const texto = (evento.results[0] && evento.results[0][0] && evento.results[0][0].transcript || "").trim();
+      if (!texto) return;
+      ouviu = true;
+      $("frase").value = texto;
+    };
+
+    ouvido.onerror = (evento) => {
+      console.error("Meu Bolso — erro do microfone:", evento.error);
+      ouviu = true; // a frase de erro já explica o que fazer
+      if (evento.error === "not-allowed" || evento.error === "service-not-allowed") {
+        respostaAssistente("Permita o uso do microfone no navegador e tente de novo.");
+      } else if (evento.error === "no-speech") {
+        respostaAssistente("Não ouvi nada. Toque no microfone e fale de novo.");
+      } else if (evento.error === "network") {
+        respostaAssistente("Sem conexão com a internet. Confira o Wi-Fi ou os dados móveis e tente de novo.");
+      } else if (evento.error === "audio-capture") {
+        respostaAssistente("Não encontrei o microfone. Confira se ele está ligado e tente de novo.");
+      } else if (evento.error !== "aborted") {
+        respostaAssistente("Não consegui ouvir agora. Toque no microfone e tente de novo.");
+      }
+    };
+
+    ouvido.onend = () => {
+      estadoBotao(false);
+      if (!ouviu) return respostaAssistente("Não ouvi nada. Toque no microfone e fale de novo.");
+      if ($("frase").value.trim()) enviarFrase();
+    };
+
+    botao.addEventListener("click", () => {
+      if (escutando) return ouvido.stop();
+      ouviu = false;
+      try {
+        ouvido.start();
+        estadoBotao(true);
+        respostaAssistente("Fale o gasto…");
+      } catch (erro) {
+        console.error("Meu Bolso — não deu para ligar o microfone:", erro);
+        respostaAssistente("Não consegui ouvir agora. Toque no microfone e tente de novo.");
+      }
+    });
   }
 
   function escolherFoto() {
