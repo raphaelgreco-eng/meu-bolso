@@ -4,6 +4,8 @@
   --laranja: #F26A1B;
   --laranja-escuro: #C9530C;
   --laranja-claro: #FFF1E7;
+  --laranja-botao: #B84A08;       /* fundo de botão com texto branco: contraste acima de 4,5 */
+  --laranja-botao-toque: #9A3D06;
   --azul: #0B2A5B;
   --azul-medio: #2F4A78;
   --fundo: #F7F8FB;
@@ -124,8 +126,9 @@ input:focus { outline: none; border-color: var(--laranja); box-shadow: 0 0 0 3px
 .campo-valor { font-size: 28px; font-weight: 700; min-height: 60px; }
 
 .linha-campos { display: grid; grid-template-columns: 1fr; gap: 0; align-items: end; }
-@media (min-width: 380px) {
-  .linha-campos { grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.linha-campos > div { min-width: 0; }
+@media (min-width: 480px) {
+  .linha-campos { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; }
 }
 
 /* Categorias: um toque escolhe */
@@ -151,8 +154,8 @@ input:focus { outline: none; border-color: var(--laranja); box-shadow: 0 0 0 3px
   cursor: pointer;
 }
 .categoria[aria-pressed="true"] {
-  background: var(--laranja);
-  border-color: var(--laranja);
+  background: var(--laranja-botao);
+  border-color: var(--laranja-botao);
   color: #fff;
 }
 
@@ -170,9 +173,9 @@ input:focus { outline: none; border-color: var(--laranja); box-shadow: 0 0 0 3px
   cursor: pointer;
 }
 .btn + .btn { margin-top: 10px; }
-.btn:disabled { opacity: 0.6; cursor: wait; }
-.primario { background: var(--laranja); color: #fff; }
-.primario:active { background: var(--laranja-escuro); }
+.btn:disabled { background: #D5D9E2; color: #4A5266; border-color: #D5D9E2; cursor: wait; }
+.primario { background: var(--laranja-botao); color: #fff; }
+.primario:active { background: var(--laranja-botao-toque); }
 .secundario { background: #fff; color: var(--azul); border-color: var(--azul); }
 
 .btn-texto {
@@ -223,6 +226,7 @@ input:focus { outline: none; border-color: var(--laranja); box-shadow: 0 0 0 3px
   font-weight: 600;
   box-shadow: 0 6px 20px rgba(11, 42, 91, 0.25);
   z-index: 10;
+  cursor: pointer;
 }
 
 /* ---------- Barras por categoria ---------- */

@@ -33,7 +33,7 @@
       return "A senha precisa ter pelo menos 6 caracteres. Escolha uma senha maior.";
     }
     if (m.includes("email not confirmed")) {
-      return "Este e-mail ainda não foi confirmado. Desligue a confirmação de e-mail no Supabase e tente de novo.";
+      return "Esta conta ainda não foi liberada. Espere alguns minutos e toque em Entrar de novo.";
     }
     if (m.includes("email") && (m.includes("invalid") || m.includes("valid"))) {
       return "Este e-mail não parece válido. Confira se está escrito certo.";
@@ -41,13 +41,13 @@
     if (m.includes("rate limit") || m.includes("too many")) return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
     if (m.includes("jwt") || m.includes("session") || m.includes("token")) return "Sua entrada expirou. Toque em Sair e entre de novo.";
     if (m.includes("row-level security") || m.includes("permission denied")) {
-      return "O banco recusou a operação. Saia e entre de novo; se continuar, confira a proteção por linha da tabela no Supabase.";
+      return "Não deu para salvar. Toque em Sair, entre de novo e tente outra vez.";
     }
     if (codigo === "23514" || m.includes("check constraint")) {
-      if (m.includes("categoria")) return "Esta categoria não é aceita pelo banco. Confira os nomes das categorias no Supabase.";
-      if (m.includes("origem")) return "O banco não aceitou a origem do gasto. Confira os valores aceitos na coluna origem no Supabase.";
-      if (m.includes("valor")) return "O banco não aceitou este valor. Digite um valor maior que zero, por exemplo 12,50.";
-      return "O banco recusou um dos dados do gasto. Confira as regras da tabela gastos no Supabase.";
+      if (m.includes("categoria")) return "Esta categoria não foi aceita. Escolha outra categoria e tente de novo.";
+      if (m.includes("origem")) return "Não deu para salvar este gasto. Tente de novo; se continuar, lance o gasto à mão.";
+      if (m.includes("valor")) return "Este valor não foi aceito. Digite um valor maior que zero, por exemplo 12,50.";
+      return "Um dos dados do gasto não foi aceito. Confira valor, categoria e data e tente de novo.";
     }
     if (codigo === "23502" || m.includes("null value")) {
       return "Falta preencher um dado obrigatório do gasto. Confira valor, categoria e data e tente de novo.";
@@ -66,12 +66,17 @@
     elemento.hidden = !texto;
   }
 
-  function aviso(texto) {
+  // Aviso de sucesso some em 3 segundos; aviso de erro fica até a pessoa tocar nele.
+  function aviso(texto, ehErro) {
     const el = $("aviso");
     el.textContent = texto;
     el.hidden = false;
     clearTimeout(temporizadorAviso);
-    temporizadorAviso = setTimeout(() => { el.hidden = true; }, 3000);
+    if (!ehErro) temporizadorAviso = setTimeout(() => { el.hidden = true; }, 3000);
+  }
+
+  function erroAviso(texto) {
+    aviso(texto + " (Toque para fechar.)", true);
   }
 
   // ---------- Datas e valores ----------
@@ -98,15 +103,25 @@
 
   // ---------- Início ----------
 
+  // Frase mostrada ao tocar em Entrar quando o app não conseguiu começar.
+  let problemaInicio = "";
+
   function iniciar() {
     const erroEntrada = $("erro-entrada");
 
+    // Os botões de entrada são ligados antes de tudo, para sempre mostrarem uma frase.
+    $("form-entrada").addEventListener("submit", (e) => { e.preventDefault(); entrar(false); });
+    $("btn-criar").addEventListener("click", () => entrar(true));
+
     if (!window.supabase) {
-      mostrarErro(erroEntrada, "Não foi possível carregar o app. Confira a internet e abra a página de novo.");
+      problemaInicio = "Não foi possível carregar o app. Confira a internet e abra a página de novo.";
+      mostrarErro(erroEntrada, problemaInicio);
       return;
     }
     if (!cfg.SUPABASE_URL || !cfg.SUPABASE_CHAVE_PUBLICA || cfg.SUPABASE_URL.includes("COLE")) {
-      mostrarErro(erroEntrada, "O app ainda não foi configurado. Cole a URL e a chave pública em app/configuracao.js.");
+      console.error("Meu Bolso — falta a URL ou a chave pública em app/configuracao.js.");
+      problemaInicio = "O app ainda não está pronto para uso. Termine a configuração e abra a página de novo.";
+      mostrarErro(erroEntrada, problemaInicio);
       return;
     }
 
@@ -114,12 +129,11 @@
       auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false }
     });
 
-    $("form-entrada").addEventListener("submit", (e) => { e.preventDefault(); entrar(false); });
-    $("btn-criar").addEventListener("click", () => entrar(true));
     $("btn-sair").addEventListener("click", sair);
     $("form-gasto").addEventListener("submit", (e) => { e.preventDefault(); salvarGasto(); });
     $("form-assistente").addEventListener("submit", (e) => { e.preventDefault(); enviarFrase(); });
     $("btn-foto").addEventListener("click", escolherFoto);
+    $("aviso").addEventListener("click", () => { $("aviso").hidden = true; });
 
     desenharCategorias();
     $("data").value = hojeISO();
@@ -133,6 +147,7 @@
     const email = $("email").value.trim();
     const senha = $("senha").value;
 
+    if (!cliente) return mostrarErro(erroEntrada, problemaInicio);
     if (!email || !senha) return mostrarErro(erroEntrada, "Preencha o e-mail e a senha.");
     if (criarConta && senha.length < 6) return mostrarErro(erroEntrada, "A senha precisa ter pelo menos 6 caracteres. Escolha uma senha maior.");
 
@@ -145,7 +160,7 @@
 
       if (resposta.error) return mostrarErro(erroEntrada, frase(resposta.error));
       if (!resposta.data.session) {
-        return mostrarErro(erroEntrada, "Conta criada, mas o Supabase está pedindo confirmação por e-mail. Desligue essa confirmação no Supabase e toque em Entrar.");
+        return mostrarErro(erroEntrada, "Conta criada, mas ainda não foi liberada. Espere alguns minutos e toque em Entrar.");
       }
 
       usuario = resposta.data.session.user;
@@ -161,6 +176,7 @@
   function ocupado(sim) {
     $("btn-entrar").disabled = sim;
     $("btn-criar").disabled = sim;
+    $("btn-entrar").textContent = sim ? "Entrando…" : "Entrar";
   }
 
   async function sair() {
@@ -183,7 +199,25 @@
 
   // ---------- Gastos do mês ----------
 
+  // Frases das listas vazias; durante a carga ou numa falha elas dão lugar a outra frase.
+  const TEXTOS_VAZIO = {
+    "ultimos-vazio": "Nenhum gasto lançado este mês.",
+    "barras-vazio": "As barras aparecem quando houver gastos no mês.",
+    "lista-vazia": "Nenhum gasto neste mês ainda."
+  };
+
+  function estadoDoMes(texto) {
+    $("total-mes").textContent = "…";
+    $("media-dia").textContent = "";
+    $("ultimos").replaceChildren();
+    $("barras").replaceChildren();
+    $("lista").replaceChildren();
+    Object.keys(TEXTOS_VAZIO).forEach((id) => { $(id).textContent = texto; $(id).hidden = false; });
+  }
+
   async function carregarMes() {
+    const FALHA = "Não consegui carregar seus gastos. Toque em Sair e entre de novo.";
+    if (!gastosDoMes.length) estadoDoMes("Carregando seus gastos…");
     const agora = new Date();
     const inicio = iso(new Date(agora.getFullYear(), agora.getMonth(), 1));
     const fim = iso(new Date(agora.getFullYear(), agora.getMonth() + 1, 0));
@@ -198,15 +232,21 @@
         .order("data", { ascending: false })
         .order("criado_em", { ascending: false });
 
-      if (error) return aviso(frase(error));
+      if (error) {
+        console.error("Meu Bolso — erro ao carregar o mês:", error);
+        gastosDoMes = [];
+        return estadoDoMes(FALHA);
+      }
       gastosDoMes = data || [];
       desenharMes();
     } catch (erro) {
-      aviso(frase(erro));
+      gastosDoMes = [];
+      estadoDoMes(navigator.onLine ? FALHA : frase(erro));
     }
   }
 
   function desenharMes() {
+    Object.keys(TEXTOS_VAZIO).forEach((id) => { $(id).textContent = TEXTOS_VAZIO[id]; });
     const total = gastosDoMes.reduce((soma, g) => soma + Number(g.valor), 0);
     $("total-mes").textContent = moeda.format(total);
     $("media-dia").textContent = "Média de " + moeda.format(total / new Date().getDate()) + " por dia";
@@ -278,11 +318,11 @@
 
     try {
       const { error } = await cliente.from("gastos").delete().eq("id", gasto.id);
-      if (error) return aviso(frase(error));
+      if (error) return erroAviso(frase(error));
       aviso("Gasto apagado.");
       carregarMes();
     } catch (erro) {
-      aviso(frase(erro));
+      erroAviso(frase(erro));
     }
   }
 
@@ -313,6 +353,7 @@
     mostrarErro(erroGasto, "");
     const botao = $("btn-salvar");
     botao.disabled = true;
+    botao.textContent = "Salvando…";
     try {
       const { error } = await cliente.from("gastos").insert({
         dono: usuario.id,
@@ -335,6 +376,7 @@
       mostrarErro(erroGasto, frase(erro));
     } finally {
       botao.disabled = false;
+      botao.textContent = "Salvar gasto";
     }
   }
 
@@ -430,6 +472,12 @@
     });
   }
 
+  // Só aceita a frase do servidor se ela for curta e em português; senão, o app usa a frase padrão.
+  function fraseDoServidor(texto) {
+    if (typeof texto !== "string" || !texto.trim() || texto.length > 200) return "";
+    return /[ãõçáéíóúâêà]|\b(o|a|de|para|com|não)\b/i.test(texto) ? texto : "";
+  }
+
   async function falarComAssistente(pedido) {
     assistenteOcupado(true);
     if (!pedido.imagem) respostaAssistente("Pensando…");
@@ -451,10 +499,11 @@
       try { corpo = await resposta.json(); } catch (erro) { /* resposta sem JSON */ }
 
       if (!resposta.ok) {
+        console.error("Meu Bolso — erro do assistente:", resposta.status, corpo);
         if (resposta.status === 404) {
-          respostaAssistente("O assistente não está publicado neste endereço. Abra o app pelo site da Netlify.");
+          respostaAssistente("O assistente não funciona neste endereço. Abra o app pelo endereço de sempre e tente de novo.");
         } else {
-          respostaAssistente(corpo.erro || "O assistente não conseguiu responder agora. Tente de novo em instantes.");
+          respostaAssistente(fraseDoServidor(corpo.erro) || "O assistente não conseguiu responder agora. Tente de novo em instantes.");
         }
         return false;
       }
